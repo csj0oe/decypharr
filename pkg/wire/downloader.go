@@ -430,18 +430,20 @@ func (s *Store) processSymlink(debridTorrent *types.Torrent, torrentRclonePath, 
 			entryName := entry.Name()
 			fullPath := filepath.Join(dirPath, entryName)
 
-			// Check if this matches a remaining file
-			if file, exists := remainingFiles[entryName]; exists {
-				fileSymlinkPath := filepath.Join(torrentSymlinkPath, file.Name)
-
-				if err := os.Symlink(fullPath, fileSymlinkPath); err == nil || os.IsExist(err) {
-					filePaths = append(filePaths, fileSymlinkPath)
-					delete(remainingFiles, entryName)
-					s.logger.Info().Msgf("File is ready: %s", file.Name)
-				}
-			} else if entry.IsDir() {
-				// If not found and it's a directory, check inside
+			if entry.IsDir() {
+				// Check inside the directory first
 				checkDirectory(fullPath)
+			} else {
+				// Check if this matches a remaining file
+				if file, exists := remainingFiles[entryName]; exists {
+					fileSymlinkPath := filepath.Join(torrentSymlinkPath, file.Name)
+
+					if err := os.Symlink(fullPath, fileSymlinkPath); err == nil || os.IsExist(err) {
+						filePaths = append(filePaths, fileSymlinkPath)
+						delete(remainingFiles, entryName)
+						s.logger.Info().Msgf("File is ready: %s", file.Name)
+					}
+				}
 			}
 		}
 	}
